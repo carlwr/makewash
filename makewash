@@ -1,0 +1,173 @@
+#!/usr/bin/env zsh
+
+self=$0:t
+
+emulate zsh -o nounset
+zmodload zsh/parameter
+
+
+# ------------------------------------------------------------- #
+#                              help                             #
+# ------------------------------------------------------------- #
+
+typeset help
+<< 'EOF' sed -E "s|%%|${self}|g" \
+| { IFS= read -rd '' help || true; }
+
+%% - make make make less unbearable output
+     
+(or: wrapper for colorizing the output of make/gmake with `colr`)
+
+
+USAGE
+
+  %% [<make-arg>...]
+  %% <%%-arg>
+
+
+OPTIONS
+
+  <%%-arg>:
+
+    -_C,--_color         colorize even if stdout is not a TTY
+    -_h,--_help          display help for wrapper
+        --_getColors     print the color definitions used
+
+  <make-arg>:
+
+    (any other options are passed on to make/gmake)
+
+
+  `--_getColors`:
+
+    does:
+    - prints a `typeset` command that sets the `colors` array
+
+    intended to:
+    - facilitate testing
+    - allow colorizing arbitrary text using the color def's of this wrapper
+
+    if `make` is this wrapper, then the following should be equivalent:
+
+      # 1.:
+      %% <args>
+
+      # 2.:
+      eval "$(%% --_getColors)"
+      COLR_COLLECT=1 colr gmake <args> --colorDef "$colors[@]"
+
+    example (colorize arbitrary text):
+
+      eval "$(make --_getColors)"       # set array `colors`
+
+      # now these commands should print the same thing (both lines, with color):
+      colr print -l '#cmt' 'make:***' --colorDef "$colors[@]"
+      print -l '#cmt' 'make:***' | colr --colorDef "$colors[@]"
+
+
+ENVIRONMENT
+
+  MAKEWASH_UNDERMAKE
+    command or path to the underlying [g]make binary to use
+    if not set, the first [g]make executable on PATH is picked
+
+  MAKEWASH_DRY
+    if set and not "0": print what would have been done; don't invoke make
+
+EOF
+
+
+# ------------------------------------------------------------- #
+#                           parameters                          #
+# ------------------------------------------------------------- #
+
+self=$0:t
+args=( "$@" )
+
+typeset -a colors
+(){
+  # color scheme:
+  local -A \
+  c=(
+       [red]='01;31'
+      [dark]='38;5;65'
+      [blue]='38;5;117'
+    [yellow]='38;5;003'
+    [purple]='38;5;147'
+    )
+
+  # re-used prefix REs:
+  local pref_mak='(?x) ^           g?make   (\[\d*\])?  :'
+  local pref_Mak='(?x) ^  [^\[\*]* Makefile :\d*        :'
+  local pref_any="($pref_mak|$pref_Mak)"
+
+  colors=(
+    '^#.*'                                            ''  $c[dark]
+    '^Failure to make.*'                              -i  $c[red]
+    '(?x) .*:\d+:\s           \*\*\*   (\s*\[.*\])?'  -i  $c[red]
+    "(?x) ${pref_any} \s*     \*\*\*   (\s*\[.*\])?"  -i  $c[red]
+    "(?x) ${pref_mak} \s* Circular .*"                -i  $c[red]
+    "(?x) ${pref_Mak} \s* (?! \*\*\*)"                -i  $c[yellow]
+    "(?x) ${pref_mak} \s* (?! \*\*\*)"                -i  $c[blue]
+    '^gmake .*$'                                      ''  $c[purple]
+    '^(sh|bash|zsh):[\d:]*'                           -i  $c[yellow]
+    'no such file or directory'                       -i  $c[red]
+    'parse error'                                     -i  $c[red]
+    'command not found'                               -i  $c[red]
+    )
+
+  }
+
+
+# ------------------------------------------------------------- #
+#                        parse arguments                        #
+# ------------------------------------------------------------- #
+
+typeset -i forceColor=0
+case ${args[1]-} in
+     ( -_C|--_colo?r    )  forceColor=1       && shift args
+  ;; ( -_h|--_help      )  print $help        && exit 0
+  ;; (     --_getColors )  typeset -p1 colors && exit 0
+  ;;
+esac
+
+
+# ------------------------------------------------------------- #
+#                         make business                         #
+# ------------------------------------------------------------- #
+
+typeset make=${MAKEWASH_UNDERMAKE-}
+(($#make)) || (){
+  local candidate
+  foreach candidate ( ${${(f)"$(whence -a gmake)"}}
+                      ${${(f)"$(whence -a  make)"}} )
+    [[ ${candidate:P} != ${self:P} ]] && {  # heat death comes soon enough
+      make=$candidate
+      break
+      }
+  end
+  (($#make)) ||
+    { <<<"$self: MAKEWASH_UNDERMAKE not set + no suitable [g]make on PATH"
+      exit 1
+    } >&2
+  }
+
+typeset -i use_colr
+(){
+  local -i avail=0; command -v colr &>/dev/null && avail=1
+  local -i isTTY=0; [[ -t 1 ]]                  && isTTY=1
+  use_colr=$(( avail && (isTTY || forceColor) ))
+  }
+
+if ((use_colr))
+then run() COLR_COLLECT=1 colr $make $args --colorDef "$colors[@]"
+else run()                     $make $args
+fi
+
+if ((${MAKEWASH_DRY-0}))
+then
+  functions -x2 run && typeset -p make args
+else
+  { run; } always { echo; }
+    # exit code of `run` == exit code of script
+fi
