@@ -3,7 +3,7 @@
 bin=makewash
 name=Makewash
 homepage=https://github.com/carlwr/makewash
-version=1.0
+version=1.001
 
 desc=${${(f)"$(./${bin} -_h)"}[1]#*'- '}
 
@@ -13,10 +13,10 @@ desc=${${(f)"$(./${bin} -_h)"}[1]#*'- '}
 
 cat <<EOF
 class $name < Formula
-  desc "$desc"
+  desc     "$desc"
   homepage "$homepage"
-  version "$version"
-  license "(custom)"
+  version  "$version"
+  license  "(custom)"
   url "file:///Users/carl/Dropbox/Documents/dev/shell/makewash",
     using: :git,
     branch: "main"
