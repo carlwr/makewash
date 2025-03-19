@@ -2,15 +2,13 @@
 
 set -eu
 
-homepage=$page
-version=$vers
-
 cat <<EOF
 class $name < Formula
   desc     "$desc"
-  homepage "$homepage"
-  version  "$version"
+  homepage "$page"
+  version  "$vers"
   license  "(custom)"
+
   url "$repo",
     using: :git,
     branch: "$brch"
