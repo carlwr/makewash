@@ -32,35 +32,70 @@ clean:
 
 # -------------------------- homebrew ------------------------- #
 
-.PHONY:\
-install_brew_localformula
-install_brew_localformula: $(brewformula)
-	brew install -v -d --formula ./$<
+gen_formula   := repo/gen_brewformula
+tap_repourl   := git@github.com:carlwr/homebrew-tap.git
+tap_worktree  := .aux/homebrew-tap
+brewformula   := $(tap_worktree)/Formula/makewash.rb
 
+brew-update-tap       :  brew-tap-tree-fetched $(brewformula)
+brew-tap-tree-fetched :  brew-tap-tree-exists
+brew-tap-tree-exists  :| $(tap_worktree)
+$(brewformula)        :  brew-tap-tree-fetched $(gen_formula)
+
+brew-update-tap: msg = '(makewash.rb): update'
+brew-update-tap:
+	# $@:
+	git -C $(tap_worktree) add ./Formula/makewash.rb
+	git -C $(tap_worktree) commit -m $(msg)
+	# NOTE: pushing with --dry-run:
+	git -C $(tap_worktree) push --dry-run
+	@echo
+
+brew-tap-tree-fetched:
+	# $@:
+	git -C $(tap_worktree) fetch
+	@echo
+
+$(tap_worktree):
+	# $@:
+	git clone $(tap_repourl) $@
+	@echo
+
+$(brewformula): name  = Makewash
+$(brewformula): desc != ./makewash -_h | grep -om1 "\- .*" | sed 's/- //'
+$(brewformula): page  = https://github.com/carlwr/makewash
+$(brewformula): vers  = 1.001
+$(brewformula): repo  = https://github.com/carlwr/makewash.git
+$(brewformula): brch  = main
+
+# TODO delete (obsolete):
 .PHONY:\
 gen_brewformula
 gen_brewformula: $(brewformula)
 
-$(brewformula): repo/gen_brewformula
+$(brewformula):
 	mkdir -p $(@D)
-	repo/gen_brewformula > $@
+	# $@:
+	[ -d $(@D) ]
+	name='$(name)' \
+	desc='$(desc)' \
+	page='$(page)' \
+	vers='$(vers)' \
+	repo='$(repo)' \
+	brch='$(brch)' \
+	  $(gen_formula) > $@
+	@echo
+
+
+brew-clean:
+	rm -rf .aux/
+
+.PHONY:\
+  brew-update-tap        \
+  brew-tap-tree-fetched  \
+  brew-tap-tree-exists   \
+  brew-clean
 
 
 
-# ------------------------- misc; old ------------------------- #
-
-# @brew install --build-from-source --force-bottle --verbose --debug $(brewformula)
-
-# with DESTDIR:
-# https://github.com/Distrotech/txt2man/blob/0e09055e925f81c9333ee0a4697970e68a85249a/Makefile
-# prefix ?= /usr
-# BIN = src2man bookman txt2man
-# MAN1 = src2man.1 txt2man.1 bookman.1
-#
-# all: $(MAN1)
-#
-# install: $(MAN1)
-# 	mkdir -p $(DESTDIR)$(prefix)/bin $(DESTDIR)$(prefix)/share/man/man1
-# 	cp $(BIN) $(DESTDIR)$(prefix)/bin/
-# 	cp $(MAN1) $(DESTDIR)$(prefix)/share/man/man1
 
