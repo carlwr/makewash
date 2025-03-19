@@ -51,8 +51,7 @@ brew-update-tap:
 	# $@:
 	git -C $(tap_worktree) add ./Formula/makewash.rb
 	git -C $(tap_worktree) commit -m $(msg)
-	# NOTE: pushing with --dry-run:
-	git -C $(tap_worktree) push --dry-run
+	git -C $(tap_worktree) push
 	@echo
 
 brew-tap-tree-fetched:
