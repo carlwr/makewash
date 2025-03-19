@@ -1,4 +1,4 @@
-.SHELLFLAGS   += -u -o pipefail
+.SHELLFLAGS   += -eu
 MAKEFLAGS     := --no-builtin-rules         \
                  --warn-undefined-variables \
                  --no-print-directory
