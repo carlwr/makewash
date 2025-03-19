@@ -4,11 +4,9 @@ MAKEFLAGS     := --no-builtin-rules         \
                  --no-print-directory
 
 prefix      ?=  /usr/local
-BIN          =  makewash
-
-
 bindir      ?= $(prefix)/bin
 destdir     ?=
+BIN          =  makewash
 INSTALL     ?= install -m 0755
 
 .PHONY:\
@@ -27,7 +25,11 @@ uninstall:
 clean:
 	@echo '(Nothing to clean)'
 
-.PHONY: unintall clean
+.PHONY:\
+  all        \
+  install    \
+  uninstall  \
+  clean
 
 
 # -------------------------- homebrew ------------------------- #
@@ -37,10 +39,12 @@ tap_repourl   := git@github.com:carlwr/homebrew-tap.git
 tap_worktree  := .aux/homebrew-tap
 brewformula   := $(tap_worktree)/Formula/makewash.rb
 
+
 brew-update-tap       :  brew-tap-tree-fetched $(brewformula)
 brew-tap-tree-fetched :  brew-tap-tree-exists
 brew-tap-tree-exists  :| $(tap_worktree)
 $(brewformula)        :  brew-tap-tree-fetched $(gen_formula)
+
 
 brew-update-tap: msg = '(makewash.rb): update'
 brew-update-tap:
@@ -67,14 +71,7 @@ $(brewformula): page  = https://github.com/carlwr/makewash
 $(brewformula): vers  = 1.001
 $(brewformula): repo  = https://github.com/carlwr/makewash.git
 $(brewformula): brch  = main
-
-# TODO delete (obsolete):
-.PHONY:\
-gen_brewformula
-gen_brewformula: $(brewformula)
-
 $(brewformula):
-	mkdir -p $(@D)
 	# $@:
 	[ -d $(@D) ]
 	name='$(name)' \
@@ -86,7 +83,6 @@ $(brewformula):
 	  $(gen_formula) > $@
 	@echo
 
-
 brew-clean:
 	rm -rf .aux/
 
@@ -95,7 +91,3 @@ brew-clean:
   brew-tap-tree-fetched  \
   brew-tap-tree-exists   \
   brew-clean
-
-
-
-
