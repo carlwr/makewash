@@ -1,7 +1,15 @@
+.SHELLFLAGS   += -u -o pipefail
+MAKEFLAGS     := --no-builtin-rules         \
+                 --warn-undefined-variables \
+                 --no-print-directory
+
 prefix      ?=  /usr/local
 BIN          =  makewash
-brewformula  =  homebrew-tap/Formula/makewash.rb
 
+
+bindir      ?= $(prefix)/bin
+destdir     ?=
+INSTALL     ?= install -m 0755
 
 .PHONY:\
 all
@@ -10,8 +18,16 @@ all: $(BIN)
 .PHONY:\
 install
 install: $(BIN)
-	mkdir -p $(prefix)/bin
-	cp $(BIN) $(prefix)/bin/
+	mkdir -p $(destdir)$(bindir)
+	$(INSTALL) $(BIN) $(destdir)$(bindir)/$(BIN)
+
+uninstall:
+	rm -f $(destdir)$(bindir)/$(BIN)
+
+clean:
+	@echo '(Nothing to clean)'
+
+.PHONY: unintall clean
 
 
 # -------------------------- homebrew ------------------------- #
