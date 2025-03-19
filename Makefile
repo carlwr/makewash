@@ -3,19 +3,19 @@ MAKEFLAGS     := --no-builtin-rules         \
                  --warn-undefined-variables \
                  --no-print-directory
 
+
 prefix      ?=  /usr/local
-bindir      ?= $(prefix)/bin
+bindir      ?=  $(prefix)/bin
 destdir     ?=
-BIN          =  makewash
-INSTALL     ?= install -m 0755
+BIN         :=  makewash
+INSTALL     ?=  install -m 0755
 
-.PHONY:\
-all
-all: $(BIN)
 
-.PHONY:\
-install
+all    : $(BIN)
 install: $(BIN)
+
+
+install:
 	mkdir -p $(destdir)$(bindir)
 	$(INSTALL) $(BIN) $(destdir)$(bindir)/$(BIN)
 
